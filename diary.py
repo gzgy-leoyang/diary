@@ -2,11 +2,20 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 
+from ftplib import FTP
+
 import os
 import sys
 import getopt
 import time
 from datetime import date,datetime,time
+
+#################################################33
+# 日记文件名
+diary_file = "log.xlsx"
+
+# 包含路径的日记文件名
+file_name = None
 
 ############################
 # @berif 打印 help 信息
@@ -20,6 +29,9 @@ def usage( ):
 def parser_content( argv ):
     if argv[1] == "commit" :
         return input(" [随手记 ]")
+    elif argv[1] == "push":
+        ftp_service()
+        exit()
     elif (argv[1] == "--help") or argv[1] == "-h" :
         usage( )
         exit()
@@ -40,8 +52,8 @@ def get_week_date():
 def get_workbook( fileName ):
     # ## 查询是否有文件，如果有该文件，执行删除，再重新建同名文件  
     global file_name
-    cur_path  = sys.path[0]
-    file_name  = cur_path+'/'+fileName
+    # cur_path  = sys.path[0]
+    # file_name  = cur_path+'/'+fileName
     if not os.access( file_name , os.F_OK ):
         print (" FileNotFoundError " , reason )
         exit()
@@ -62,16 +74,29 @@ def get_sheet( wb_obj , title_str ):
     finally:
         return sheet_obj
 
-# 日记文件名
-diary_file = "log.xlsx"
-# 包含路径的日记文件名
-file_name = None
+def ftp_service():
+    remote_file_path = diary_file
+    ftp = FTP(host="192.168.1.105",user="user",passwd="123")
+    ftp.login( user="user",passwd="123" )
 
+    # 匿名登陆，文件写入 ftp-anonymous/ 下，OK
+    # ftp = FTP(host="192.168.1.105")
+    # ftp.set_debuglevel(2)
+    # ftp.login()
+
+    with open( file_name,"rb") as local_file :
+        ftp.storbinary('STOR ' + remote_file_path ,local_file ,1024 )
+    ftp.set_debuglevel(0)
+    ftp.quit()
+
+#################
 def main():
     global file_name
     # 获取当前时间，包括年周数（一年内的第几周）和周日数（一周内的第几天）
     date_str,time_str,week_int,weekDay_int = get_week_date()
-        
+
+    cur_path  = sys.path[0]
+    file_name  = cur_path+'/'+diary_file      
     # 根据年周数，确定表格名称
     sheet_title_str = str( week_int )
 
