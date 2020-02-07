@@ -12,6 +12,7 @@ from datetime import date,datetime,time
 
 import configparser
 import re
+import socket
 
 ############################
 # @berif 打印 help 信息
@@ -84,7 +85,7 @@ def get_week_date():
     cur_date_str = datetime_obj.date().strftime("%Y-%m-%d")
     cur_time_str = datetime_obj.time().strftime("%H:%M:%S")
     cur_week_in_year_tuple = datetime_obj.isocalendar()
-    print (" %s      全年第%d周 本周第%d天" % ( cur_date_str,cur_week_in_year_tuple[1],cur_week_in_year_tuple[2]) )
+    print ("%s      第%d周 第%d天" % ( cur_date_str,cur_week_in_year_tuple[1],cur_week_in_year_tuple[2]) )
 
     cur_week_int = cur_week_in_year_tuple[1]
     cur_weekDay_int = cur_week_in_year_tuple[2]
@@ -111,8 +112,14 @@ def get_sheet( file,wb_obj , title_str ):
         return sheet_obj
 
 def ftp_upload( remote_file , local_file , ip,  userName, password ):
-    ftp = FTP(host=ip , user=userName , passwd=password)
+    try:
+        ftp = FTP(host=ip , user=userName , passwd=password)
+    except (socket.error, socket.gaierror):
+        print ("异常：服务器连接失败")
+        return None
+    
     ftp.login( user=userName , passwd=password)
+    print ( "登陆成功:  %s" % ftp.getwelcome())
     # 匿名登陆，文件写入 ftp-anonymous/ 
     # ftp = FTP(host="192.168.1.105")
     # ftp.login()
@@ -129,7 +136,7 @@ def main():
     local_file_path  = sys.path[0] +'/' + local_file_name
 
     if sys.argv[1] == "commit" :
-        content_str = input(" [随手记 ]")
+        content_str = input("[ 随手记 ]")
         if content_str != "":
             wb = get_workbook(  local_file_path )
             sheet = get_sheet( local_file_path , wb , sheet_title_str )
@@ -145,12 +152,16 @@ def main():
             wb.save( local_file_path )
             
             if  auto_upload_int == weekDay_int  :
-                ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
+                ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
+                if ret == None :
+                    print ("确认服务器IP配置正确或服务器已经启动")
         else :
             print (" 输入内容为空，不写入任何内容")
             exit()
     elif sys.argv[1] == "push":
-        ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
+        ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
+        if ret == None :
+            print ("确认服务器IP配置正确或服务器已经启动")
         exit()
     elif sys.argv[1] == "help" :
         usage( )
