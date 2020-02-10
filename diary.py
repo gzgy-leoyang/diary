@@ -33,6 +33,10 @@ def construct_default_config():
         print ( "Port invaild ")
         exit()
 
+    server_online_str = input(" 网络支持 : (y/n)")
+    if server_online_str != "y" :
+        server_online_str = "n"
+
     server_user_str = input(" 用户名: ")
     server_pass_str = input(" 用户密码: ")
     local_file_name_str = input(" 日志文件名: ")
@@ -44,6 +48,7 @@ def construct_default_config():
     local_file_name = local_file_name_str
 
     config["FTP Server"] = {}
+    config["FTP Server"]["online"] = server_online_str
     config["FTP Server"]["serverIP"] = server_ip_str
     config["FTP Server"]["serverPort"] = server_port_str
     config["FTP Server"]["userName"] = server_user_str
@@ -51,7 +56,7 @@ def construct_default_config():
     with open(  sys.path[0] + '/config.ini' ,"w") as fd :
         config.write( fd )
     
-    return auto_upload_int,  local_file_name , server_ip_str,server_port_str,server_user_str,server_pass_str
+    return auto_upload_int,  local_file_name , server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str
 
 def parser_config():
     cfg_name  = sys.path[0] + '/config.ini'
@@ -71,6 +76,7 @@ def parser_config():
         if "FTP Server" in cfg_file :
             server_ip_str = cfg_file["FTP Server"]["serverIP"]
             server_port_str = cfg_file["FTP Server"]["serverPort"]
+            server_online_str = cfg_file["FTP Server"]["online"]
             server_user_str = cfg_file["FTP Server"]["userName"]
             server_pass_str = cfg_file["FTP Server"]["password"]
         else :
@@ -78,7 +84,7 @@ def parser_config():
             server_port_str = "21"
             server_user_str = "user"
             server_pass_str = "123"
-    return auto_upload_int , local_file_name , server_ip_str,server_port_str,server_user_str,server_pass_str
+    return auto_upload_int , local_file_name , server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str
 
 def get_week_date():
     datetime_obj = datetime.now()
@@ -132,7 +138,7 @@ def main():
     date_str,time_str,week_int,weekDay_int = get_week_date()
     sheet_title_str = str( week_int )
 
-    auto_upload_int, local_file_name, server_ip_str,server_port_str,server_user_str,server_pass_str = parser_config() 
+    auto_upload_int, local_file_name, server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str = parser_config() 
     local_file_path  = sys.path[0] +'/' + local_file_name
 
     if sys.argv[1] == "commit" :
@@ -151,14 +157,14 @@ def main():
                 sheet.cell( weekDay_int+1 ,2).value = privous_str +"\n[ "+ time_str+"]  "+ content_str
             wb.save( local_file_path )
             
-            if  auto_upload_int == weekDay_int  :
+            if  (auto_upload_int == weekDay_int) and (server_online_str == "y")  :
                 ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
                 if ret == None :
                     print ("确认服务器IP配置正确或服务器已经启动")
         else :
             print (" 输入内容为空，不写入任何内容")
             exit()
-    elif sys.argv[1] == "push":
+    elif (sys.argv[1] == "push") and (server_online_str == "y") :
         ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
         if ret == None :
             print ("确认服务器IP配置正确或服务器已经启动")
