@@ -28,20 +28,25 @@ $ pip install openpyxl
 | 周六  | null  |
 | 周日  | null  |
 
-1. 将需要日志 log.xlsx 文件与本程序置于同一路径，执行以下命令即可：
+1. 直接运行 job 程序，比如：
+```sh
+./job commit 
+./job push
+```
+
+2. 将需要日志 log.xlsx 文件与本程序置于同一路径，执行以下命令即可：
 ```sh
 $ python3 diary.py  commit
 ```
-
-**强烈推荐**
+> **强烈推荐**
 > 在 .bashrc 中添加“命令别名”，重启终端或
-`
-$ source .bashrc
-`
-之后即可通过“别名”启动包含参数的工具，直接进入提交模式。
-```sh
-# .bashrc 中添加如下别名
-alias job='python3 <your_path>/diary.py commit' 
+>`
+>$ source .bashrc
+>`
+>之后即可通过“别名”启动包含参数的工具，直接进入提交模式。
+>```sh
+># .bashrc 中添加如下别名
+>alias job='python3 <your_path>/diary.py commit' 
 
 # 命令行执行即可
 $ job
