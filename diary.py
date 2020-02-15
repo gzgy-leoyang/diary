@@ -1,22 +1,26 @@
+
+import os
+import re
+import sys
+import time
+import getopt
+import socket
+from ftplib import FTP
+
 import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 
-from ftplib import FTP
-
-import os
-import sys
-import getopt
-import time
-from datetime import date,datetime,time
-
 import configparser
-import re
-import socket
+from datetime import date,datetime,time
 
 ############################
 # @berif 打印 help 信息
 def usage( ):
+    print(' Usage: diary <cmd>')
+    print(' cmd:')
+    print('     commit  ：提交一条记录，Enter 结束输入')
+    print('     push    : 向 FTP 服务器推送本地记录文件')
     print(' Diary v1.0.0  2020/2/3 ( leoyang20102013@163.com )')
 
 ############
@@ -135,9 +139,12 @@ def ftp_upload( remote_file , local_file , ip,  userName, password ):
 
 #################
 def main():
-    date_str,time_str,week_int,weekDay_int = get_week_date()
-    sheet_title_str = str( week_int )
 
+    if sys.argv.__len__() <= 1:
+        usage()
+        exit()
+
+    date_str,time_str,week_int,weekDay_int = get_week_date()
     auto_upload_int, local_file_name, server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str = parser_config() 
     local_file_path  = sys.path[0] +'/' + local_file_name
 
@@ -145,8 +152,7 @@ def main():
         content_str = input("[ 随手记 ]")
         if content_str != "":
             wb = get_workbook(  local_file_path )
-            sheet = get_sheet( local_file_path , wb , sheet_title_str )
-
+            sheet = get_sheet( local_file_path , wb , str( week_int ) )
             privous_str = sheet.cell( weekDay_int+1 ,2).value
             sheet.cell( weekDay_int+1 ,2).alignment = Alignment( horizontal="left",vertical="top")
             
@@ -174,8 +180,8 @@ def main():
         exit()
     else:
         exit()
-
     return 
 
+#########
 if __name__ == "__main__":
     main()
