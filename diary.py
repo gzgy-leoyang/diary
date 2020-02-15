@@ -16,6 +16,9 @@ from openpyxl.styles import Alignment
 import configparser
 from datetime import date,datetime,time
 
+import pytest
+
+
 ############################
 # @berif 打印 help 信息
 def usage( ):
@@ -106,8 +109,14 @@ def get_week_date():
 def get_workbook( fileName ):
     if not os.access( fileName , os.F_OK ):
         print (" File Not Found Error ")
-        exit()
+        return None
+        # exit()
     return openpyxl.load_workbook( fileName )
+
+###
+def test_get_workbook():
+    assert get_workbook("dddd")==None
+
 
 def get_sheet( file,wb_obj , title_str ):
     try:

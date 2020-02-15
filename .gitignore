@@ -9,6 +9,8 @@
 #
 # Add by yj
 *.xlsx
+__pycache__/
+*.pyc
 # add end 
 
 # Normal rules
