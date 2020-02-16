@@ -107,16 +107,16 @@ def get_week_date():
     return cur_date_str,cur_time_str,cur_week_int,cur_weekDay_int
 
 def get_workbook( fileName ):
-    if not os.access( fileName , os.F_OK ):
-        print (" File Not Found Error ")
+    if fileName.find(".xlsx") < 0 :
         return None
-        # exit()
+    if not os.access( fileName , os.F_OK ):
+        wb = openpyxl.Workbook()
+        sheet = wb .create_sheet("temp")
+        wb.save(fileName)
+        print (" File not found , Create new workbook")
+        return wb
+    print ( " loading file...%s" % fileName )
     return openpyxl.load_workbook( fileName )
-
-###
-def test_get_workbook():
-    assert get_workbook("dddd")==None
-
 
 def get_sheet( file,wb_obj , title_str ):
     try:
