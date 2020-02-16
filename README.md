@@ -55,9 +55,9 @@ $ job
 ```
 
 2. 配置文件
-
 以下配置文件用于设定工作模式，第一次启动时，如没有该文件则自动生成，可以手动修改该文件。
-```
+
+```sh
 [DEFAULT]
 auto_upload = 1                                     #自动推送日，设置为1～7，每周固定一天推送服务器
 local_file_name = yangj_log.xlsx    # 推送文件，也就是日志内容文件
@@ -70,6 +70,27 @@ username = yangj                #登陆FTP服务器的用户名
 password = 111                      #用户密码
 ```
 
-
 ## 不得不说
 Python 的开发确实快，边学边干，大半天就作出这个demo（后续还有很多可以作的）
+
+## 测试
+在代码中添加 "test_*" 开头的函数，并通过 asssert 断言检查函数的输入和返回值的情况，以此进行程序的自动测试。
+1. 安装 pytest 测试框架: \
+`pip3 install -U pytest`
+
+2. 项目中添加单元测试代码，如下：
+
+```py
+import pytest
+
+def get_workbook( fileName ):
+    if not os.access( fileName , os.F_OK ):
+        print (" File Not Found Error ")
+        return None
+        # exit()
+    return openpyxl.load_workbook( fileName )
+
+###
+def test_get_workbook():
+    assert get_workbook("dddd")==None
+```
