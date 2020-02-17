@@ -30,7 +30,7 @@ def usage( ):
 
 ############
 ## ini 文件操作
-def construct_default_config():
+def construct_default_config( config_file_name):
     server_ip_str = input(" 服务器IP : ")
 
     if not re.match(  r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$' ,server_ip_str):
@@ -42,7 +42,7 @@ def construct_default_config():
         print ( "Port invaild ")
         exit()
 
-    server_online_str = input(" 网络支持 : (y/n)")
+    server_online_str = input(" 网络支持 (y/n): ")
     if server_online_str != "y" :
         server_online_str = "n"
 
@@ -62,25 +62,28 @@ def construct_default_config():
     config["FTP Server"]["serverPort"] = server_port_str
     config["FTP Server"]["userName"] = server_user_str
     config["FTP Server"]["password"] = server_pass_str
-    with open(  sys.path[0] + '/config.ini' ,"w") as fd :
-        config.write( fd )
-    
+    with open(  sys.path[0] + '/'+config_file_name ,"w") as fd :
+        config.write( fd )  
     return auto_upload_int,  local_file_name , server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str
 
-def parser_config():
-    cfg_name  = sys.path[0] + '/config.ini'
-    if not os.access( cfg_name , os.F_OK ):
+def parser_config( config_file_name ):
+    if not config_file_name.endswith(".ini") :
+        return None
+
+    config_file_path  = sys.path[0] +'/'+config_file_name
+    if not os.access( config_file_path , os.F_OK ):
         print (" 首次使用,配置服务器参数：")
-        return construct_default_config()
+        return construct_default_config( config_file_name )
     else :
         cfg_file = configparser.ConfigParser()
-        cfg_file.read( cfg_name)
+        cfg_file.read( config_file_path)
 
         if "DEFAULT" in cfg_file :
             auto_upload_int = cfg_file["DEFAULT"].getint("auto_upload")
             local_file_name  = cfg_file["DEFAULT"]["local_file_name"]
         else :
             auto_upload_int = 1
+            local_file_name="local_diary.xlsx"
 
         if "FTP Server" in cfg_file :
             server_ip_str = cfg_file["FTP Server"]["serverIP"]
@@ -91,6 +94,7 @@ def parser_config():
         else :
             server_ip_str = "192.168.1.105"
             server_port_str = "21"
+            server_online_str= "n"
             server_user_str = "user"
             server_pass_str = "123"
     return auto_upload_int , local_file_name , server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str
@@ -100,22 +104,21 @@ def get_week_date():
     cur_date_str = datetime_obj.date().strftime("%Y-%m-%d")
     cur_time_str = datetime_obj.time().strftime("%H:%M:%S")
     cur_week_in_year_tuple = datetime_obj.isocalendar()
-    print ("%s      第%d周 第%d天" % ( cur_date_str,cur_week_in_year_tuple[1],cur_week_in_year_tuple[2]) )
 
-    cur_week_int = cur_week_in_year_tuple[1]
-    cur_weekDay_int = cur_week_in_year_tuple[2]
-    return cur_date_str,cur_time_str,cur_week_int,cur_weekDay_int
+    return cur_date_str,cur_time_str,cur_week_in_year_tuple[1],cur_week_in_year_tuple[2]
 
+## 测试: test_diary.test_get_workbook()
 def get_workbook( fileName ):
-    if fileName.find(".xlsx") < 0 :
+    if not fileName.endswith(".xlsx")  :
         return None
+
     if not os.access( fileName , os.F_OK ):
         wb = openpyxl.Workbook()
         sheet = wb .create_sheet("temp")
         wb.save(fileName)
-        print (" File not found , Create new workbook")
+        print (" File not found ,then create new workbook")
         return wb
-    print ( " loading file...%s" % fileName )
+    print ( " Loading file...%s" % fileName )
     return openpyxl.load_workbook( fileName )
 
 def get_sheet( file,wb_obj , title_str ):
@@ -156,7 +159,9 @@ def main():
         exit()
 
     date_str,time_str,week_int,weekDay_int = get_week_date()
-    auto_upload_int, local_file_name, server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str = parser_config() 
+    print ("%s      第%d周 第%d天" % ( date_str, week_int , weekDay_int ) )
+
+    auto_upload_int, local_file_name, server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str = parser_config("config.ini") 
     local_file_path  = sys.path[0] +'/' + local_file_name
 
     if sys.argv[1] == "commit" :
