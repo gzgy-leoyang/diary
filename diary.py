@@ -8,16 +8,11 @@ import time
 import getopt
 import socket
 from ftplib import FTP
-
 import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
-
 import configparser
 from datetime import date,datetime,time
-
-import pytest
-
 
 ############################
 # @berif 打印 help 信息
@@ -66,9 +61,15 @@ def construct_default_config( config_file_name):
         config.write( fd )  
     return auto_upload_int,  local_file_name , server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str
 
-def parser_config( config_file_name ):
-    if not config_file_name.endswith(".ini") :
+## 测试：test_parser_config()
+def parser_config( config_file_name="config.ini" ):
+    print( " *****  config_file_name : " ,config_file_name )
+
+    if config_file_name == "":
         return None
+    else :
+        if not config_file_name.endswith(".ini") :
+            return None
 
     config_file_path  = sys.path[0] +'/'+config_file_name
     if not os.access( config_file_path , os.F_OK ):
@@ -104,13 +105,15 @@ def get_week_date():
     cur_date_str = datetime_obj.date().strftime("%Y-%m-%d")
     cur_time_str = datetime_obj.time().strftime("%H:%M:%S")
     cur_week_in_year_tuple = datetime_obj.isocalendar()
-
     return cur_date_str,cur_time_str,cur_week_in_year_tuple[1],cur_week_in_year_tuple[2]
 
 ## 测试: test_diary.test_get_workbook()
-def get_workbook( fileName ):
-    if not fileName.endswith(".xlsx")  :
+def get_workbook( fileName = "yangj_log.xlsx" ):
+    if fileName == "":
         return None
+    else :
+        if not fileName.endswith(".xlsx")  :
+            return None
 
     if not os.access( fileName , os.F_OK ):
         wb = openpyxl.Workbook()
