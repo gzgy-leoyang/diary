@@ -17,9 +17,10 @@ from datetime import date,datetime,time
 ############################
 # @berif 打印 help 信息
 def usage( ):
-    print(' Usage: diary <cmd>')
+    print(' Usage: diary <cmd> [opt]')
     print(' cmd:')
     print('     commit  ：提交一条记录，Enter 结束输入')
+    print('     show  [ week ] : 显示第 week 周的内容')
     print('     push    : 向 FTP 服务器推送本地记录文件')
     print(' Diary v1.0.0  2020/2/3 ( leoyang20102013@163.com )')
 
@@ -63,7 +64,6 @@ def construct_default_config( config_file_name):
 
 ## 测试：test_parser_config()
 def parser_config( config_file_name="config.ini" ):
-    print( " *****  config_file_name : " ,config_file_name )
 
     if config_file_name == "":
         return None
@@ -121,7 +121,7 @@ def get_workbook( fileName = "yangj_log.xlsx" ):
         wb.save(fileName)
         print (" File not found ,then create new workbook")
         return wb
-    print ( " Loading file...%s" % fileName )
+    print ( "%s" % fileName )
     return openpyxl.load_workbook( fileName )
 
 def get_sheet( file,wb_obj , title_str ):
@@ -154,13 +154,41 @@ def ftp_upload( remote_file , local_file , ip,  userName, password ):
         ftp.storbinary('STOR ' + remote_file , fd ,1024 )
     ftp.quit()
 
+def show_week( file,week_str ):
+    wb = get_workbook(  file )
+    sheet = get_sheet( file , wb , week_str )
+    for i in range(1,8):
+        content = sheet.cell( i+1 ,2).value
+        if content != None :
+            print( "[%i] "% i)
+            print( "------------------")
+            print( "%s"% content )
+
+def commit( file, week_str,week_day_int,content_str,time_str ):
+    if content_str != "":
+        wb = get_workbook(  file )
+        sheet = get_sheet( file , wb ,week_str )
+        privous_str = sheet.cell( week_day_int+1 ,2).value
+        sheet.cell( week_day_int+1 ,2).alignment = Alignment( horizontal="left",vertical="top")
+        
+        if privous_str == None :
+            # 空白cell
+            sheet.cell( week_day_int+1 ,2).value = "["+ time_str+"] "+ content_str
+        else :
+            sheet.cell( week_day_int+1 ,2).value = privous_str +"\n["+ time_str+"]  "+ content_str
+        wb.save( file )
+    else :
+        print (" 输入内容为空，不写入任何内容")
+
+
+
+
 #################
 def main():
-
     if sys.argv.__len__() <= 1:
         usage()
         exit()
-
+    
     date_str,time_str,week_int,weekDay_int = get_week_date()
     print ("%s      第%d周 第%d天" % ( date_str, week_int , weekDay_int ) )
 
@@ -168,27 +196,22 @@ def main():
     local_file_path  = sys.path[0] +'/' + local_file_name
 
     if sys.argv[1] == "commit" :
-        content_str = input("[ 随手记 ]")
-        if content_str != "":
-            wb = get_workbook(  local_file_path )
-            sheet = get_sheet( local_file_path , wb , str( week_int ) )
-            privous_str = sheet.cell( weekDay_int+1 ,2).value
-            sheet.cell( weekDay_int+1 ,2).alignment = Alignment( horizontal="left",vertical="top")
-            
-            if privous_str == None :
-                # 空白cell
-                sheet.cell( weekDay_int+1 ,2).value = "[ "+ time_str+"] "+ content_str
-            else :
-                sheet.cell( weekDay_int+1 ,2).value = privous_str +"\n[ "+ time_str+"]  "+ content_str
-            wb.save( local_file_path )
-            
-            if  (auto_upload_int == weekDay_int) and (server_online_str == "y")  :
-                ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
-                if ret == None :
-                    print ("确认服务器IP配置正确或服务器已经启动")
-        else :
-            print (" 输入内容为空，不写入任何内容")
-            exit()
+        commit( local_file_path, str( week_int ),weekDay_int, input("[ 随手记 ]") ,time_str )
+        if  (auto_upload_int == weekDay_int) and (server_online_str == "y")  :
+            ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
+            if ret == None :
+                print ("确认服务器IP配置正确或服务器已经启动")
+        exit()
+    elif sys.argv[1] == "show" :
+        if (sys.argv.__len__() > 2) and (sys.argv[2].isdigit()) :
+            w = int(sys.argv[2])
+            if w > week_int :
+                w = week_int
+            week_str = str( w )
+        else:
+            week_str = str( week_int )
+        show_week( local_file_path,week_str )
+        exit()
     elif (sys.argv[1] == "push") and (server_online_str == "y") :
         ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
         if ret == None :
