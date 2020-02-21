@@ -26,6 +26,7 @@ def usage( ):
 
 ############
 ## ini 文件操作
+## TODO 构造配置文件，只返回是否成功
 def construct_default_config( config_file_name):
     server_ip_str = input(" 服务器IP : ")
 
@@ -58,11 +59,14 @@ def construct_default_config( config_file_name):
     config["FTP Server"]["serverPort"] = server_port_str
     config["FTP Server"]["userName"] = server_user_str
     config["FTP Server"]["password"] = server_pass_str
+
+    ## 异常处理，写异常需要处理一下
     with open(  sys.path[0] + '/'+config_file_name ,"w") as fd :
         config.write( fd )  
     return auto_upload_int,  local_file_name , server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str
 
 ## 测试：test_parser_config()
+## TODO 将配置文件的解析，分为独立部分，目前的方式缺乏灵活性，也不利于作测试
 def parser_config( config_file_name="config.ini" ):
 
     if config_file_name == "":
@@ -100,12 +104,58 @@ def parser_config( config_file_name="config.ini" ):
             server_pass_str = "123"
     return auto_upload_int , local_file_name , server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str
 
-def get_week_date():
-    datetime_obj = datetime.now()
-    cur_date_str = datetime_obj.date().strftime("%Y-%m-%d")
-    cur_time_str = datetime_obj.time().strftime("%H:%M:%S")
-    cur_week_in_year_tuple = datetime_obj.isocalendar()
-    return cur_date_str,cur_time_str,cur_week_in_year_tuple[1],cur_week_in_year_tuple[2]
+def get_auto_upload( config_file_name="config.ini" ):
+    if config_file_name == "":
+        print ("配置文件名为空")
+        return None
+    else :
+        if not config_file_name.endswith(".ini") :
+            print ("无效的配置文件名")
+            return None
+    config_file_path  = sys.path[0] +'/'+config_file_name
+    if not os.access( config_file_path , os.F_OK ):
+        print ("配置文件访问失败")
+        return None
+    else :
+        cfg_file = configparser.ConfigParser()
+        cfg_file.read( config_file_path)
+
+        if "DEFAULT" in cfg_file :
+            auto_upload_int = cfg_file["DEFAULT"].getint("auto_upload")
+        else :
+            auto_upload_int = 1
+    return auto_upload_int
+
+## TODO:
+# 添加工作环境检查，启动时首先检查一下记录文件和配置文件是否存在，如果
+# 如果不存在，则判断为首次运行，生成这两个文件
+#  *配置文件中，记录文件名被返回，用于建立记录文件实例
+def check_env( ):
+    config_file_path  = sys.path[0] +'/config.ini'
+    if not os.access( config_file_path , os.F_OK ):
+        print (" 首次使用,配置服务器参数：")
+        construct_default_config( config_file_name )
+    
+    record_file_path  = sys.path[0] +'/'+record_file_name
+    if not os.access( record_file_path , os.F_OK ):
+        print (" 首次使用,配置服务器参数：")
+        construct_default_config( config_file_name )
+
+
+def get_date():
+    return datetime.now().date().strftime("%Y-%m-%d")
+
+def get_week():
+    cur_week_in_year_tuple = datetime.now().isocalendar()
+    return cur_week_in_year_tuple[1]
+
+def get_day_in_week():
+    cur_week_in_year_tuple = datetime.now().isocalendar()
+    return cur_week_in_year_tuple[2]
+
+def get_time():
+    return datetime.now().time().strftime("%H:%M:%S")
+
 
 ## 测试: test_diary.test_get_workbook()
 def get_workbook( fileName = "yangj_log.xlsx" ):
@@ -164,24 +214,26 @@ def show_week( file,week_str ):
             print( "------------------")
             print( "%s"% content )
 
-def commit( file, week_str,week_day_int,content_str,time_str ):
+def commit( file,content_str ):
     if content_str != "":
+        week_int = get_week()
+        day_in_week_int = get_day_in_week()
+        print ("%s      第%d周 第%d天" % ( get_date(), week_int ,day_in_week_int ))
+
         wb = get_workbook(  file )
-        sheet = get_sheet( file , wb ,week_str )
-        privous_str = sheet.cell( week_day_int+1 ,2).value
-        sheet.cell( week_day_int+1 ,2).alignment = Alignment( horizontal="left",vertical="top")
+        sheet = get_sheet( file , wb ,str(week_int) )
+        privous_str = sheet.cell( day_in_week_int+1 ,2).value
+        sheet.cell( day_in_week_int+1 ,2).alignment = Alignment( horizontal="left",vertical="top")
         
+        time_str = get_time()
         if privous_str == None :
             # 空白cell
-            sheet.cell( week_day_int+1 ,2).value = "["+ time_str+"] "+ content_str
+            sheet.cell( day_in_week_int+1 ,2).value = "["+ time_str+"] "+ content_str
         else :
-            sheet.cell( week_day_int+1 ,2).value = privous_str +"\n["+ time_str+"]  "+ content_str
+            sheet.cell( day_in_week_int+1 ,2).value = privous_str +"\n["+ time_str+"]  "+ content_str
         wb.save( file )
     else :
         print (" 输入内容为空，不写入任何内容")
-
-
-
 
 #################
 def main():
@@ -189,28 +241,25 @@ def main():
         usage()
         exit()
     
-    date_str,time_str,week_int,weekDay_int = get_week_date()
-    print ("%s      第%d周 第%d天" % ( date_str, week_int , weekDay_int ) )
-
     auto_upload_int, local_file_name, server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str = parser_config("config.ini") 
     local_file_path  = sys.path[0] +'/' + local_file_name
 
     if sys.argv[1] == "commit" :
-        commit( local_file_path, str( week_int ),weekDay_int, input("[ 随手记 ]") ,time_str )
-        if  (auto_upload_int == weekDay_int) and (server_online_str == "y")  :
-            ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
-            if ret == None :
-                print ("确认服务器IP配置正确或服务器已经启动")
+        commit( local_file_path,input("[ 随手记 ]")  )
+        # if  (auto_upload_int == weekDay_int) and (server_online_str == "y")  :
+        #     ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
+        #     if ret == None :
+        #         print ("确认服务器IP配置正确或服务器已经启动")
         exit()
     elif sys.argv[1] == "show" :
+        week_int = get_week()
         if (sys.argv.__len__() > 2) and (sys.argv[2].isdigit()) :
             w = int(sys.argv[2])
             if w > week_int :
                 w = week_int
-            week_str = str( w )
-        else:
-            week_str = str( week_int )
-        show_week( local_file_path,week_str )
+        else :
+            w = week_int
+        show_week( local_file_path,str( w ) )
         exit()
     elif (sys.argv[1] == "push") and (server_online_str == "y") :
         ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
