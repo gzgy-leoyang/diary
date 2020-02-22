@@ -4,7 +4,7 @@
 import os
 import re
 import sys
-import time
+import time as TIME
 import getopt
 import socket
 from ftplib import FTP
@@ -15,14 +15,23 @@ import configparser
 from datetime import date,datetime,time
 
 
-############
-## ini 文件操作
-## TODO 构造配置文件，只返回是否成功
+## configuare file
+def get_server_mode( config_file_name="config.ini" ):
+    if config_file_name == "":
+        return None
+    else :
+        if not config_file_name.endswith(".ini") :
+            return None
+    config_file_path  = sys.path[0] +'/'+config_file_name
+    cfg_file = configparser.ConfigParser()
+    cfg_file.read( config_file_path)
+    if "FTP Server" in cfg_file :
+        server_online_str = cfg_file["FTP Server"]["online"]
+    else :
+        server_online_str= "n"
+    return server_online_str
 
-## 测试：test_parser_config()
-## TODO 将配置文件的解析，分为独立部分，目前的方式缺乏灵活性，也不利于作测试
-def parser_config( config_file_name="config.ini" ):
-
+def get_server_user_pwd( config_file_name="config.ini" ):
     if config_file_name == "":
         return None
     else :
@@ -30,43 +39,33 @@ def parser_config( config_file_name="config.ini" ):
             return None
 
     config_file_path  = sys.path[0] +'/'+config_file_name
-    if not os.access( config_file_path , os.F_OK ):
-        print (" 首次使用,配置服务器参数：")
-        return construct_default_config( config_file_name )
+    cfg_file = configparser.ConfigParser()
+    cfg_file.read( config_file_path)
+    if "FTP Server" in cfg_file :
+        server_user_str = cfg_file["FTP Server"]["userName"]
+        server_pass_str = cfg_file["FTP Server"]["password"]
     else :
-        cfg_file = configparser.ConfigParser()
-        cfg_file.read( config_file_path)
+        server_user_str = "user"
+        server_pass_str = "123"
+    return server_user_str,server_pass_str
 
-        if "DEFAULT" in cfg_file :
-            auto_upload_int = cfg_file["DEFAULT"].getint("auto_upload")
-            local_file_name  = cfg_file["DEFAULT"]["local_file_name"]
-        else :
-            auto_upload_int = 1
-            local_file_name="local_diary.xlsx"
-
-        if "FTP Server" in cfg_file :
-            server_ip_str = cfg_file["FTP Server"]["serverIP"]
-            server_port_str = cfg_file["FTP Server"]["serverPort"]
-            server_online_str = cfg_file["FTP Server"]["online"]
-            server_user_str = cfg_file["FTP Server"]["userName"]
-            server_pass_str = cfg_file["FTP Server"]["password"]
-        else :
-            server_ip_str = "192.168.1.105"
-            server_port_str = "21"
-            server_online_str= "n"
-            server_user_str = "user"
-            server_pass_str = "123"
-    return auto_upload_int , local_file_name , server_ip_str,server_port_str,server_online_str,server_user_str,server_pass_str
-
-
+def get_server_address( config_file_name="config.ini" ):
+    if config_file_name == "":
+        return None
+    else :
+        if not config_file_name.endswith(".ini") :
+            return None
     config_file_path  = sys.path[0] +'/'+config_file_name
     cfg_file = configparser.ConfigParser()
     cfg_file.read( config_file_path)
-    if "DEFAULT" in cfg_file :
-        local_file_name  = cfg_file["DEFAULT"]["local_file_name"]
+
+    if "FTP Server" in cfg_file :
+        server_ip_str = cfg_file["FTP Server"]["serverIP"]
+        server_port_str = cfg_file["FTP Server"]["serverPort"]
     else :
-        local_file_name="local_diary.xlsx"
-    return local_file_name
+        server_ip_str = "192.168.1.105"
+        server_port_str = "21"
+    return server_ip_str,server_port_str
 
 
 def get_auto_upload( config_file_name="config.ini" ):
@@ -91,9 +90,7 @@ def get_auto_upload( config_file_name="config.ini" ):
             auto_upload_int = 1
     return auto_upload_int
 
-
-
-
+#### date and time
 def get_date():
     return datetime.now().date().strftime("%Y-%m-%d")
 
@@ -107,23 +104,6 @@ def get_day_in_week():
 
 def get_time():
     return datetime.now().time().strftime("%H:%M:%S")
-
-
-
-    if not os.access( fileName , os.F_OK ):
-        # 新建文件及 wb，#0 sheet，向其中填充模板
-        wb = openpyxl.Workbook()
-        sheet = wb .create_sheet("0") 
-        day_in_week_str = ["周一","周二","周三","周四","周五","周六","周日"]
-        sheet.cell( 1 ,1).value = "日期"
-        sheet.cell( 1 ,2).value = "内容"
-        for i in range(0,7):
-            print ( i,day_in_week_str[i] )
-            sheet.cell( i+2 ,1).value = day_in_week_str[i]
-        wb.save(fileName)
-        print (" File not found ,then create new workbook")
-        return wb
-    return openpyxl.load_workbook( fileName )
 
 def get_sheet( file,wb_obj , title_str ):
     try:
@@ -155,16 +135,23 @@ def ftp_upload( remote_file , local_file , ip,  userName, password ):
         ftp.storbinary('STOR ' + remote_file , fd ,1024 )
     ftp.quit()
 
-def show_week( file,week_str ):
+def show_week( file,week_int ):
     wb = get_workbook(  file )
-    sheet = get_sheet( file , wb , week_str )
+    sheet = get_sheet( file , wb , str(week_int) )
+    year_week = str( "%s-%i-"%(datetime.now().date().strftime("%Y"),week_int) )
+    day_in_week_str = ["周一","周二","周三","周四","周五","周六","周日"]
+   
+    print( " %s "% str( "< %s 年  第 %i 周 >"%(datetime.now().date().strftime("%Y"),week_int) ))
     for i in range(1,8):
+        date_str = TIME.strftime("%Y-%m-%d",TIME.strptime( year_week+str(i) ,'%Y-%W-%u'))
         content = sheet.cell( i+1 ,2).value
         if content != None :
-            print( "[%i] "% i)
-            print( "------------------")
+            print( "----------------------")
+            print( "|  %s   %s |"%  (day_in_week_str[i-1],date_str))
+            print( "----------------------")
             print( "%s"% content )
 
+## general operation
 def commit( file,content_str ):
     if content_str != "":
         week_int = get_week()
@@ -195,15 +182,38 @@ def get_workbook( fileName = "yangj_log.xlsx" ):
         if not fileName.endswith(".xlsx")  :
             return None
 
+    if not os.access( fileName , os.F_OK ):
+        # 新建文件及 wb，#0 sheet，向其中填充模板
+        wb = openpyxl.Workbook()
+        sheet = wb .create_sheet("0") 
+        day_in_week_str = ["周一","周二","周三","周四","周五","周六","周日"]
+        sheet.cell( 1 ,1).value = "日期"
+        sheet.cell( 1 ,2).value = "内容"
+        for i in range(0,7):
+            print ( i,day_in_week_str[i] )
+            sheet.cell( i+2 ,1).value = day_in_week_str[i]
+        wb.save(fileName)
+        print (" File not found ,then create new workbook")
+        return wb
+    return openpyxl.load_workbook( fileName )
+
 def get_reocrd_file_name( config_file_name="config.ini" ):
     if config_file_name == "":
         return None
     else :
         if not config_file_name.endswith(".ini") :
             return None
+    config_file_path  = sys.path[0] +'/'+config_file_name
+    cfg_file = configparser.ConfigParser()
+    cfg_file.read( config_file_path)
+    if "DEFAULT" in cfg_file :
+        local_file_name  = cfg_file["DEFAULT"]["local_file_name"]
+    else :
+        local_file_name="local_diary.xlsx"
+    return local_file_name
 
 ## 创建配置文件
-def construct_default_config( config_file_path="config.ini"):
+def create_config( config_file_path="config.ini"):
     config = configparser.ConfigParser()
     config["FTP Server"] = {}
 
@@ -244,7 +254,7 @@ def check_environment( ):
     config_file_path  = sys.path[0] +'/config.ini'
     if not os.access( config_file_path , os.F_OK ):
         print (" 首次使用,配置服务器参数：")
-        construct_default_config( config_file_path)
+        create_config( config_file_path)
     else :
         record_file_name = get_reocrd_file_name()
     record_file_path  = sys.path[0] +'/'+record_file_name
@@ -271,7 +281,7 @@ def main():
     if check_environment() < 0 :
         exit()
 
-    local_file_path  = sys.path[0] +'/' + get_reocrd_file_name( )
+    local_file_path  = sys.path[0] +'/' + get_reocrd_file_name()
     if sys.argv[1] == "commit" :
         commit( local_file_path,input("[ 随手记 ]")  )
         exit()
@@ -283,7 +293,7 @@ def main():
                 w = week_int
         else :
             w = week_int
-        show_week( local_file_path,str( w ) )
+        show_week( local_file_path,w )
         exit()
     elif (sys.argv[1] == "push") and (server_online_str == "y") :
         ret = ftp_upload( local_file_name , local_file_path ,server_ip_str, server_user_str, server_pass_str )
