@@ -14,6 +14,8 @@ from openpyxl.styles import Alignment
 import configparser
 from datetime import date,datetime,time
 
+import readline
+
 
 ## configuare file
 def get_server_mode( config_file_name="config.ini" ):
@@ -110,7 +112,7 @@ def get_sheet( file,wb_obj , title_str ):
         sheet_list = wb_obj.get_sheet_names()
         sheet_index = sheet_list.index( title_str )
     except ValueError :
-        temp_sheet_index = sheet_list.index( "temp" )
+        temp_sheet_index = sheet_list.index( "0" )
         sheet_obj = wb_obj.copy_worksheet ( wb_obj.worksheets[ temp_sheet_index ]  )
         sheet_obj.title = title_str
         wb_obj.save( file )
@@ -255,8 +257,8 @@ def check_environment( ):
     if not os.access( config_file_path , os.F_OK ):
         print (" 首次使用,配置服务器参数：")
         create_config( config_file_path)
-    else :
-        record_file_name = get_reocrd_file_name()
+    
+    record_file_name = get_reocrd_file_name()
     record_file_path  = sys.path[0] +'/'+record_file_name
     if not os.access( record_file_path , os.F_OK ):
         get_workbook(  record_file_name )
@@ -281,9 +283,11 @@ def main():
     if check_environment() < 0 :
         exit()
 
+        
+
     local_file_path  = sys.path[0] +'/' + get_reocrd_file_name()
     if sys.argv[1] == "commit" :
-        commit( local_file_path,input("[ 随手记 ]")  )
+        commit( local_file_path,input("[随手记]")  )
         exit()
     elif sys.argv[1] == "show" :
         week_int = get_week()

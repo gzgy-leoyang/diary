@@ -1,5 +1,7 @@
 # xlsx 日志
 用于随时记录工作内容，通过 xlsx 文件记录，以周为单位进行组织。
+ > Python 的开发确实快，边学边干，大半天就作出一个基本demo，后续逐步完善
+
 
 * 本工具基于“周”进行日记内容的组织；
 * 每周的第一次记录，根据当前系统时间，自动建立一张新 sheet ；
@@ -7,56 +9,26 @@
 
 ## 依赖
 * python3
-本工具基于 python,需要首先安装 python3
 * openpyxl
-推荐通过 pip 安装 openpyxl，如下： 
-```sh 
-$ pip install openpyxl 
-```
+
+### 安装 pip
+> 首先通过 wget 下载安装程序 get-pip.py \
+$ wget https://bootstrap.pypa.io/get-pip.py \
+以 python3 执行安装，自动获得 pip3 \
+$ sudo python3 get-pip.py \
+更新一下 pip \
+$ pip install -U pip
+
+### 安装 openpyxl
+>通过 pip 安装 openpyxl \
+$ pip install openpyxl
 
 ## 使用方法
+首次启动该程序时，会自动在程序所处的路径下生成两个文件：\
+* 运行配置文件 config.ini \
+* 日志记录文件 your_file_name.xlsx
 
-0.  新建一个 log.xlsx 文件用于保存日志，该文件中必须包含一个名为 temp 的 sheet，内容如下：
-
-|   日期    |  null  |
-|---|---|
-| 周一  | null  |
-| 周二  | null  |
-| 周三  | null  |
-| 周四  | null  |
-| 周五  | null  |
-| 周六  | null  |
-| 周日  | null  |
-
-1. 直接运行 job 程序，比如：
-```sh
-./job commit 
-./job push
-```
-
-2. 将需要日志 log.xlsx 文件与本程序置于同一路径，执行以下命令即可：
-```sh
-$ python3 diary.py  commit
-```
-> **强烈推荐**
-> 在 .bashrc 中添加“命令别名”，重启终端或
->`
->$ source .bashrc
->`
->之后即可通过“别名”启动包含参数的工具，直接进入提交模式。
->```sh
-># .bashrc 中添加如下别名
->alias job='python3 <your_path>/diary.py commit' 
-
-# 命令行执行即可
-$ job
-2020-02-03  20:20:32  6th WEEK 1th Day 
-记录工作内容：
-```
-
-2. 配置文件
-以下配置文件用于设定工作模式，第一次启动时，如没有该文件则自动生成，可以手动修改该文件。
-
+其中，配置文件需要填写部分内容，配置文件可手动修改该文件。
 ```sh
 [DEFAULT]
 auto_upload = 1                                     #自动推送日，设置为1～7，每周固定一天推送服务器
@@ -70,10 +42,53 @@ username = yangj                #登陆FTP服务器的用户名
 password = 111                      #用户密码
 ```
 
-## 不得不说
-Python 的开发确实快，边学边干，大半天就作出这个demo（后续还有很多可以作的）
+### 记录内容
+通过命令参数 commit 提交一次记录，如果是第一次运行，则需要填写配置参数文件，并生成记录文件。
+```sh
+$ python3 diary.py commit
+ 首次使用,配置服务器参数：
+ 服务器IP : 12.12.12.12
+ 服务器Port : 12
+ 网络支持 (y/n): n
+ 用户名: yj
+ 用户密码: 1
+ 日志文件(*.xlsx): yj.xlsx
+```
+填写完成后，立即可以启动记录内容：
+```sh
+随手记]我的第一次记录内容就是这一句话
+2020-02-23      第8周 第7天
+```
+
+### 查看内容
+可通过 show 命令参数查看本周或指定周的日志内容，如下：
+```sh
+$ python3 diary.py show
+ < 2020 年  第 8 周 > 
+----------------------
+|  周日   2020-03-01 |
+----------------------
+[21:07:38] 我的第一次记录内容就是这一句话
+
+```
+### 远程推送
+通过 push 命令参数，启动一次远程服务器的推送。若远程ftp服务器关闭，则返回提示。
+```sh
+$ python3 diary.py push
+```
+
+
+> 在 .bashrc 中添加“命令别名”，重启终端或
+>`
+>$ source .bashrc
+>`
+>之后即可通过“别名”启动包含参数的工具，直接进入提交模式。
+>```sh
+># .bashrc 中添加如下别名
+>alias job='python3 <your_path>/diary.py commit' 
 
 ## 测试
+*测试部分不影响一般使用，仅仅用于开发过程。* \
 在代码中添加 "test_*" 开头的函数，并通过 asssert 断言检查函数的输入和返回值的情况，以此进行程序的自动测试。
 1. 安装 pytest 测试框架: \
 `pip3 install -U pytest`
