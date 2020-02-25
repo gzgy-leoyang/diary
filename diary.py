@@ -273,7 +273,7 @@ def usage( ):
     print('     commit  ：提交一条记录，Enter 结束输入')
     print('     show  [ week ] : 显示第 week 周的内容')
     print('     push    : 向 FTP 服务器推送本地记录文件')
-    print(' Diary v0.0.1  2020/2/3 ( leoyang20102013@163.com )')
+    print(' Diary v0.1  2020/2/3 ( leoyang20102013@163.com )')
 
 #################
 def main():
