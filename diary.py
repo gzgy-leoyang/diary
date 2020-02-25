@@ -140,11 +140,12 @@ def ftp_upload( remote_file , local_file , ip,  userName, password ):
 def show_week( file,week_int ):
     wb = get_workbook(  file )
     sheet = get_sheet( file , wb , str(week_int) )
-    year_week = str( "%s-%i-"%(datetime.now().date().strftime("%Y"),week_int) )
     day_in_week_str = ["周一","周二","周三","周四","周五","周六","周日"]
    
     print( " %s "% str( "< %s 年  第 %i 周 >"%(datetime.now().date().strftime("%Y"),week_int) ))
+    year_week = str( "%s-%i-"%(datetime.now().date().strftime("%Y"),week_int-1) )
     for i in range(1,8):
+        # 用 "year-week-dayInWeek" 推算出来 "year-month-dayInMonth"
         date_str = TIME.strftime("%Y-%m-%d",TIME.strptime( year_week+str(i) ,'%Y-%W-%u'))
         content = sheet.cell( i+1 ,2).value
         if content != None :
@@ -282,8 +283,6 @@ def main():
 
     if check_environment() < 0 :
         exit()
-
-        
 
     local_file_path  = sys.path[0] +'/' + get_reocrd_file_name()
     if sys.argv[1] == "commit" :
